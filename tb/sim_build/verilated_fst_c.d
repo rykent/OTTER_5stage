@@ -1,0 +1,20 @@
+verilated_fst_c.o: \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_fst_c.cpp \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilatedos.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_config.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_types.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_funcs.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_fst_c.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_trace.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/gtkwave/fastlz.c \
+ /home/ryken/oss-cad-suite/share/verilator/include/gtkwave/fastlz.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/gtkwave/fastlz.c \
+ /home/ryken/oss-cad-suite/share/verilator/include/gtkwave/fstapi.c \
+ /home/ryken/oss-cad-suite/share/verilator/include/gtkwave/fst_config.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/gtkwave/fstapi.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/gtkwave/lz4.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/gtkwave/lz4.c \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_trace_imp.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_intrinsics.h \
+ /home/ryken/oss-cad-suite/share/verilator/include/verilated_threads.h

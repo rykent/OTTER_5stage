@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1713280511" />
+    <testcase name="basic_count" classname="benchmark" file="/home/ryken/Documents/CPE333/OTTER_multicycle_base/tb/benchmark.py" lineno="6" time="0.14694666862487793" sim_time_ns="29860.001" ratio_time="203202.98023377394" />
+  </testsuite>
+</testsuites>

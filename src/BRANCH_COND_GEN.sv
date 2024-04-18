@@ -19,15 +19,43 @@
 module BRANCH_COND_GEN(
     input [31:0] RS1,
     input [31:0] RS2,
-    output logic BR_EQ,
-    output logic BR_LT,
-    output logic BR_LTU
+    input [31:0] INSTR,
+    input INTR, 
+    output logic [2:0] pcSource,
+    output logic int_taken
     );
+
+    localparam JAL = 7'b1101111;
+    localparam JALR = 7'b1100111;
+    localparam BRANCH = 1100011;
     
+    if (INTR) begin
+            int_taken = 1;
+            pcSource = 4;
+    end 
+    else begin
+    int_taken = 0;
     always_comb begin
-        BR_EQ = (RS1 == RS2); //Equal condition
-        BR_LT = ($signed(RS1) < $signed(RS2)); //Signed less than
-        BR_LTU = (RS1 < RS2); //Unsigned less than
+        case (INSTR[6:0])
+            JAL: begin
+                pcSource = 3;
+            end
+            JALR: begin
+                pcSource = 1;
+            end
+            BRANCH: begin
+                case (INSTR[14:13])
+                    2'b00: pcSource = {1'b0, ~((RS1 == RS2) ^ ~funct3[0]), 1'b0};
+                    2'b10: pcSource = {1'b0, ~(($signed(RS1) < $signed(RS2)) ^ ~funct3[0]), 1'b0};
+                    2'b11: pcSource = {1'b0, ~((RS1 < RS2) ^ ~funct3[0]), 1'b0};
+                    default: pcSource = 0;
+                endcase
+            end       
+            default: begin
+                pcSource = 0;
+            end
+        endcase
     end
-    
+    end
+
 endmodule

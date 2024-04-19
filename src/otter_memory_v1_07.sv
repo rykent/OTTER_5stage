@@ -70,7 +70,7 @@
     (* ram_decomp = "power" *) logic [31:0] memory [0:16383];
     
     initial begin
-        $readmemh("/home/ryken/Documents/CPE333/OTTER_5stage_nohazards/mem/current_test.mem", memory);
+        $readmemh("/home/ryken/Documents/CPE333/OTTER_5stage_nohazards/mem/test_all_nohazards.mem", memory);
     end
     
     assign wordAddr2 = MEM_ADDR2[15:2];

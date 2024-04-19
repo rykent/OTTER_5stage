@@ -20,7 +20,8 @@ module BRANCH_COND_GEN(
     input [31:0] RS1,
     input [31:0] RS2,
     input [31:0] INSTR,
-    input INTR, 
+    input INTR,
+    input mret_exec,
     output logic [2:0] pcSource,
     output logic int_taken
     );
@@ -29,33 +30,39 @@ module BRANCH_COND_GEN(
     localparam JALR = 7'b1100111;
     localparam BRANCH = 1100011;
     
-    if (INTR) begin
+    always_comb begin
+        pcSource = 0;
+        int_taken = 0;
+
+        if (INTR) begin
             int_taken = 1;
             pcSource = 4;
-    end 
-    else begin
-    int_taken = 0;
-    always_comb begin
-        case (INSTR[6:0])
-            JAL: begin
-                pcSource = 3;
-            end
-            JALR: begin
-                pcSource = 1;
-            end
-            BRANCH: begin
-                case (INSTR[14:13])
-                    2'b00: pcSource = {1'b0, ~((RS1 == RS2) ^ ~funct3[0]), 1'b0};
-                    2'b10: pcSource = {1'b0, ~(($signed(RS1) < $signed(RS2)) ^ ~funct3[0]), 1'b0};
-                    2'b11: pcSource = {1'b0, ~((RS1 < RS2) ^ ~funct3[0]), 1'b0};
-                    default: pcSource = 0;
-                endcase
-            end       
-            default: begin
-                pcSource = 0;
-            end
-        endcase
-    end
+        end 
+        else if (mret_exec) begin
+            pcSource = 5;
+        end
+        else begin
+            int_taken = 0;
+            case (INSTR[6:0])
+                JAL: begin
+                    pcSource = 3;
+                end
+                JALR: begin
+                    pcSource = 1;
+                end
+                BRANCH: begin
+                    case (INSTR[14:13])
+                        2'b00: pcSource = {1'b0, ~((RS1 == RS2) ^ ~INSTR[12]), 1'b0};
+                        2'b10: pcSource = {1'b0, ~(($signed(RS1) < $signed(RS2)) ^ ~INSTR[12]), 1'b0};
+                        2'b11: pcSource = {1'b0, ~((RS1 < RS2) ^ ~INSTR[12]), 1'b0};
+                        default: pcSource = 0;
+                    endcase
+                end       
+                default: begin
+                    pcSource = 0;
+                end
+            endcase
+        end
     end
 
 endmodule

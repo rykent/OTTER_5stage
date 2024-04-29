@@ -30,7 +30,7 @@ module RF(
     logic [31:0] ram [0:31]; //REGISTERS
     
     //Synchronous writing logic
-    always_ff @ (posedge CLK) begin
+    always_ff @ (negedge CLK) begin
         if (RF_EN) begin
             ram[RF_WA] <= RF_WD;
         end

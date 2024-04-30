@@ -411,7 +411,7 @@ module OTTER_MCU(
             MEM_WB_r.npc <= EX_MEM_r.npc;
             MEM_WB_r.regWrite <= EX_MEM_r.regWrite;
             MEM_WB_r.rf_wr_sel <= EX_MEM_r.rf_wr_sel;
-            MEM_WB_r.dout2 <= dout2_w;
+            //MEM_WB_r.dout2 <= dout2_w;
             MEM_WB_r.alu_res <= EX_MEM_r.alu_res;
             MEM_WB_r.rd_addr <= EX_MEM_r.rd_addr;
             MEM_WB_r.csr_rd <= EX_MEM_r.csr_rd;
@@ -432,7 +432,7 @@ module OTTER_MCU(
     mux_2bit_sel RF_WR_MUX (
         .A  (MEM_WB_r.npc),
         .B  (MEM_WB_r.csr_rd),
-        .C  (MEM_WB_r.dout2),
+        .C  (dout2_w),
         .D  (MEM_WB_r.alu_res),
         .sel(MEM_WB_r.rf_wr_sel),
         .O  (rf_wd_w)

@@ -7,7 +7,7 @@
 // Design Name: OTTER 5 Stage Forwarding Unit
 // Module Name: forwarding
 // Target Devices: Basys3
-// Description: Creates 3 signals based on the 3 possible branch comparisons in the OTTER MCU
+// Description: Controls the forwarding muxes in the otter
 // 
 // Revision:
 // Revision 0.01 - File Created

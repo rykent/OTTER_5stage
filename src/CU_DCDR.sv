@@ -44,7 +44,7 @@ module CU_DCDR(
         memWrite = 0;
         csr_WE = 0;
         memRead1 = 1;
-        memRead2 = 1;
+        memRead2 = 0;
         mret_exec = 0;
 
         case (opcode)

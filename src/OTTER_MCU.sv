@@ -89,6 +89,8 @@ module OTTER_MCU(
 
     logic [2:0] pc_source;
 
+    logic pcWrite;
+
     logic [31:0] pc_din;
     logic [31:0] pc_w;
     logic [31:0] npc_w;
@@ -104,7 +106,12 @@ module OTTER_MCU(
     always_ff @(posedge CLK) begin
         if(RST) begin
             IF_ID_r <= 0;
-        end else begin
+        end 
+        else if (stall) begin
+            IF_ID_r.pc <= IF_ID_r.pc;
+            IF_ID_r.npc <= IF_ID_r.npc;
+        end
+        else begin
             IF_ID_r.pc <= pc_w;
             IF_ID_r.npc <= npc_w;
         end
@@ -123,7 +130,7 @@ module OTTER_MCU(
 
     PC PC0 (
         .CLK     (CLK), 
-        .PC_WRITE(1'b1), //TODO
+        .PC_WRITE(pcWrite), //TODO
         .PC_RST  (RST), 
         .PC_DIN  (pc_din), 
         .PC_COUNT(pc_w)
@@ -132,7 +139,7 @@ module OTTER_MCU(
 
     Memory OTTER_MEM (
         .MEM_CLK  (CLK),
-        .MEM_RDEN1(memRead1),
+        .MEM_RDEN1(pcWrite),
         .MEM_RDEN2(EX_MEM_r.memRead2),
         .MEM_WE2  (EX_MEM_r.memWrite),
         .MEM_ADDR1(pc_w[15:2]),
@@ -163,6 +170,7 @@ module OTTER_MCU(
     logic [1:0] rf_wr_sel_w;
 
     logic memRead1;
+    logic stall;
 
     logic memRead2_w;
     logic regWrite_w;
@@ -178,9 +186,10 @@ module OTTER_MCU(
     
 
     always_ff @(posedge CLK) begin
-        if(RST) begin
+        if(RST | stall) begin
              ID_EX_r <= 0;
-        end else begin
+        end
+        else begin
             ID_EX_r.pc <= IF_ID_r.pc;
             ID_EX_r.npc <= IF_ID_r.npc;
             ID_EX_r.instr <= instr_w;
@@ -237,6 +246,14 @@ module OTTER_MCU(
         .S_TYPE  (s_type_w),
         .J_TYPE  (j_type_w),
         .B_TYPE  (b_type_w)
+    );
+
+    hazard_detection_unit HAZARD_DETECT (
+        .id_ex_rd      (ID_EX_r.instr[11:7]),
+        .instr         (instr_w),
+        .pcWrite       (pcWrite),
+        .id_ex_memRead2(ID_EX_r.memRead2),
+        .stall         (stall)
     );
 
 

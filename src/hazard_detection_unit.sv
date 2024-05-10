@@ -18,25 +18,34 @@
 module hazard_detection_unit (
 	input [31:0] instr,
 	input id_ex_memRead2,
+	input id_ex_regWrite,
 	input [4:0] id_ex_rd,
 	output pcWrite,
-	output logic stall
+	output logic if_stall,
+	output logic id_stall
 );
 	logic [4:0] if_id_rs1, if_id_rs2;
+
+	localparam BRANCH = 7'b1100011;
 
 	assign if_id_rs1 = instr[24:20];
 	assign if_id_rs2 = instr[19:15];
 
 
-	assign pcWrite = ~stall;
+	assign pcWrite = ~(if_stall | id_stall);
 
 	always_comb begin
 		//Load-Use Hazard
 		if (id_ex_memRead2 && (id_ex_rd == if_id_rs2 || id_ex_rd == if_id_rs1)) begin
-			stall = 1'b1;
+			if_stall = 1'b1;
+		end
+		//Branch RAW
+		else if ((instr[6:0] == BRANCH) && (id_ex_regWrite) && (id_ex_rd == if_id_rs2 || id_ex_rd == if_id_rs1)) begin
+			id_stall = 1'b1;
 		end
 		else begin
-			stall = 1'b0;
+			if_stall = 1'b0;
+			id_stall = 1'b0;
 		end
 	end
 

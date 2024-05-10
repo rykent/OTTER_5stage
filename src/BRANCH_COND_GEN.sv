@@ -28,7 +28,7 @@ module BRANCH_COND_GEN(
 
     localparam JAL = 7'b1101111;
     localparam JALR = 7'b1100111;
-    localparam BRANCH = 1100011;
+    localparam BRANCH = 7'b1100011;
     
     always_comb begin
         pcSource = 0;

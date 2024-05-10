@@ -107,7 +107,7 @@ module OTTER_MCU(
         if(RST) begin
             IF_ID_r <= 0;
         end 
-        else if (stall) begin
+        else if (if_stall | id_stall) begin
             IF_ID_r.pc <= IF_ID_r.pc;
             IF_ID_r.npc <= IF_ID_r.npc;
         end
@@ -130,7 +130,7 @@ module OTTER_MCU(
 
     PC PC0 (
         .CLK     (CLK), 
-        .PC_WRITE(pcWrite), //TODO
+        .PC_WRITE(pcWrite),
         .PC_RST  (RST), 
         .PC_DIN  (pc_din), 
         .PC_COUNT(pc_w)
@@ -170,7 +170,8 @@ module OTTER_MCU(
     logic [1:0] rf_wr_sel_w;
 
     logic memRead1;
-    logic stall;
+    logic if_stall;
+    logic id_stall;
 
     logic memRead2_w;
     logic regWrite_w;
@@ -186,8 +187,11 @@ module OTTER_MCU(
     
 
     always_ff @(posedge CLK) begin
-        if(RST | stall) begin
+        if(RST | if_stall) begin
              ID_EX_r <= 0;
+        end
+        else if (id_stall) begin
+            ID_EX_r <= ID_EX_r;
         end
         else begin
             ID_EX_r.pc <= IF_ID_r.pc;
@@ -253,7 +257,29 @@ module OTTER_MCU(
         .instr         (instr_w),
         .pcWrite       (pcWrite),
         .id_ex_memRead2(ID_EX_r.memRead2),
-        .stall         (stall)
+        .id_ex_regWrite(ID_EX_r.regWrite),
+        .if_stall         (if_stall),
+        .id_stall      (id_stall)
+    );
+
+    BRANCH_ADDR_GEN TARGET_GEN (
+        .J_TYPE(j_type_w),
+        .B_TYPE(b_type_w),
+        .I_TYPE(i_type_w),
+        .PC    (IF_ID_r.pc),
+        .RS1   (rs1_data_w),
+        .JAL   (jal_addr),
+        .BRANCH(branch_addr),
+        .JALR  (jalr_addr)
+    );
+
+    BRANCH_COND_GEN BRANCH_COND_GEN0 (
+        .RS1   (rs1_data_w),
+        .RS2   (rs2_data_w),
+        .INSTR   (instr_w),
+        .INTR    (INTR & MSTATUS_w[3]),
+        .pcSource(pc_source),
+        .int_taken(int_taken)
     );
 
 
@@ -278,7 +304,7 @@ module OTTER_MCU(
     logic csr_we;
 
     always_ff @(posedge CLK) begin
-        if(RST) begin
+        if(RST | id_stall) begin
              EX_MEM_r <= 0;
         end else begin
             EX_MEM_r.npc <= ID_EX_r.npc;
@@ -354,27 +380,6 @@ module OTTER_MCU(
         .srcB   (alu_srcB_data_w),
         .ALU_FUN(ID_EX_r.alu_fun),
         .RESULT (alu_res_w)
-    );
-
-
-    BRANCH_ADDR_GEN TARGET_GEN (
-        .J_TYPE(ID_EX_r.j_type),
-        .B_TYPE(ID_EX_r.b_type),
-        .I_TYPE(ID_EX_r.i_type),
-        .PC    (ID_EX_r.pc),
-        .RS1   (ID_EX_r.rs1_data),
-        .JAL   (jal_addr),
-        .BRANCH(branch_addr),
-        .JALR  (jalr_addr)
-    );
-
-    BRANCH_COND_GEN BRANCH_COND_GEN0 (
-        .RS1   (ID_EX_r.rs1_data),
-        .RS2   (ID_EX_r.rs1_data),
-        .INSTR   (ID_EX_r.instr),
-        .INTR    (INTR & MSTATUS_w[3]),
-        .pcSource(pc_source),
-        .int_taken(int_taken)
     );
 
 

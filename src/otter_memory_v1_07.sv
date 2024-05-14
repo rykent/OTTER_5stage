@@ -56,6 +56,7 @@
     input [1:0] MEM_SIZE,   // 0-Byte, 1-Half, 2-Word
     input MEM_SIGN,         // 1-unsigned 0-signed
     input [31:0] IO_IN,     // Data from IO
+    input FLUSH,
     //output ERR,           // only used for testing
     output logic IO_WR,     // IO 1-write 0-read
     output logic [31:0] MEM_DOUT1,  // Instruction
@@ -63,6 +64,7 @@
     
     logic [13:0] wordAddr2;
     logic [31:0] memReadWord, ioBuffer, memReadSized;
+    logic [31:0] memAddr2Buffer;
     logic [1:0] byteOffset;
     logic weAddrValid;      // active when saving (WE) to valid memory address
        
@@ -70,9 +72,10 @@
     (* ram_decomp = "power" *) logic [31:0] memory [0:16383];
     
     initial begin
-        $readmemh("/home/ryken/Documents/CPE333/OTTER_5stage_nohazards/mem/ahhh.mem", memory);
+        $readmemh("/home/ryken/Documents/CPE333/OTTER_5stage_nohazards/mem/matsum50x50.mem", memory);
     end
     
+
     assign wordAddr2 = MEM_ADDR2[15:2];
     assign byteOffset = MEM_ADDR2[1:0];     // byte offset of memory address
          
@@ -85,6 +88,7 @@
     always_ff @(posedge MEM_CLK) begin
       if(MEM_RDEN2)
         ioBuffer <= IO_IN;
+        memAddr2Buffer <= MEM_ADDR2;
     end
     
     // BRAM requires all reads and writes to occur synchronously
@@ -107,8 +111,13 @@
       end
 
       // read all data synchronously required for BRAM
-      if (MEM_RDEN1)                       // need EN for extra load cycle to not change instruction
+      //Output nop if flushing pipeline
+      if (FLUSH) begin
+        MEM_DOUT1 <= 0;
+      end
+      else if (MEM_RDEN1) begin                       // need EN for extra load cycle to not change instruction
         MEM_DOUT1 <= memory[MEM_ADDR1];
+      end
 
       if (MEM_RDEN2)                       // Read word from memory
         memReadWord <= memory[wordAddr2];
@@ -143,7 +152,7 @@
  
     // Memory Mapped IO
     always_comb begin
-      if(MEM_ADDR2 >= 32'h00010000) begin  // external address range
+      if(memAddr2Buffer >= 32'h00010000) begin  // external address range
         IO_WR = MEM_WE2;                 // IO Write
         MEM_DOUT2 = ioBuffer;            // IO read from buffer
         weAddrValid = 0;                 // address beyond memory range

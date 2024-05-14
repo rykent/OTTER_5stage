@@ -22,14 +22,19 @@ module BRANCH_COND_GEN(
     input [31:0] INSTR,
     input INTR,
     input mret_exec,
+    input stall,
     output logic [2:0] pcSource,
-    output logic int_taken
+    output logic int_taken,
+    output flush
     );
 
     localparam JAL = 7'b1101111;
     localparam JALR = 7'b1100111;
     localparam BRANCH = 7'b1100011;
-    
+
+    assign flush = ((pcSource != 0) & ~stall);
+    //assign flush = 0;
+
     always_comb begin
         pcSource = 0;
         int_taken = 0;

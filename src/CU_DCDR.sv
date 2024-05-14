@@ -24,7 +24,7 @@ module CU_DCDR(
     input funct7,
     output logic [3:0] alu_fun,
     output logic [1:0] alu_srcA,
-    output logic [2:0] alu_srcB,
+    output logic [1:0] alu_srcB,
     output logic [1:0] rf_wr_sel,
     output logic regWrite,
     output logic memWrite,
@@ -76,7 +76,7 @@ module CU_DCDR(
             end
             7'b0100011: begin //S-TYPE
                 memWrite = 1;
-                alu_srcB = 2; //S-Type immediate for alu add
+                alu_srcB = 1; //S-Type immediate for alu add
             end
             7'b0110111: begin //U-TYPE lui
                 regWrite = 1;
@@ -88,7 +88,7 @@ module CU_DCDR(
                 //Add immediate to pc
                 regWrite = 1;
                 alu_srcA = 1;
-                alu_srcB = 3;
+                alu_srcB = 2;
                 rf_wr_sel = 3;
             end
             7'b1101111: begin //J-TYPE
@@ -109,7 +109,7 @@ module CU_DCDR(
                         csr_WE = 1;
                         regWrite = 1;
                         rf_wr_sel = 1;
-                        alu_srcB = 4; //OR with current csr value to only set new bits
+                        alu_srcB = 3; //OR with current csr value to only set new bits
                         alu_fun = 4'b0110;
                     end
                     3'b011: begin
@@ -117,7 +117,7 @@ module CU_DCDR(
                         regWrite = 1;
                         rf_wr_sel = 1;
                         alu_srcA = 2;
-                        alu_srcB = 4; //AND inverse of set bits with current csr value to clear bits
+                        alu_srcB = 3; //AND inverse of set bits with current csr value to clear bits
                         alu_fun = 4'b0111;
                     end
                     default: begin

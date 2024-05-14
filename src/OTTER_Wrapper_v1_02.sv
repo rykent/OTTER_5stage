@@ -36,7 +36,7 @@ module OTTER_Wrapper(
     localparam SSEG_AD    = 32'h11000040; //32'h11000040
     
    // Signals for connecting OTTER_MCU to OTTER_wrapper /////////////////////
-   logic clk_50 = 0;
+   logic clk_50;
     
    logic [31:0] IOBUS_out, IOBUS_in, IOBUS_addr;
    logic [9:0] r_lcdinstr;
@@ -66,10 +66,7 @@ module OTTER_Wrapper(
    // Debouncer one shot
    debounce_one_shot DEBOUCE (.CLK(clk_50), .BTN(BTNL), .DB_BTN(BTN_INTR));
                      
-   // Clock Divider to create 50 MHz Clock //////////////////////////////////
-   always_ff @(posedge CLK) begin
-       clk_50 <= ~clk_50;
-   end
+   clkdiv CLK50 (.clk_in(CLK), .clk_out(clk_50));
    
    // Connect Signals ///////////////////////////////////////////////////////
    assign s_reset = BTNC;

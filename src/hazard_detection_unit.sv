@@ -18,34 +18,36 @@
 module hazard_detection_unit (
 	input [31:0] instr,
 	input id_ex_memRead2,
+	input ex_mem_memRead2,
 	input id_ex_regWrite,
 	input [4:0] id_ex_rd,
+	input [4:0] ex_mem_rd,
 	output pcWrite,
-	output logic if_stall,
-	output logic id_stall
+	output logic stall
 );
 	logic [4:0] if_id_rs1, if_id_rs2;
-
-	localparam BRANCH = 7'b1100011;
 
 	assign if_id_rs1 = instr[24:20];
 	assign if_id_rs2 = instr[19:15];
 
 
-	assign pcWrite = ~(if_stall | id_stall);
+	assign pcWrite = ~stall;
 
 	always_comb begin
 		//Load-Use Hazard
 		if (id_ex_memRead2 && (id_ex_rd == if_id_rs2 || id_ex_rd == if_id_rs1)) begin
-			if_stall = 1'b1;
+			stall = 1'b1;
 		end
-		//Branch RAW
-		else if ((instr[6:0] == BRANCH) && (id_ex_regWrite) && (id_ex_rd == if_id_rs2 || id_ex_rd == if_id_rs1)) begin
-			id_stall = 1'b1;
+		//Branch Load Use Hazard
+		else if ((instr[6:0] == 7'b1100011) && ex_mem_memRead2 && (ex_mem_rd == if_id_rs2 || ex_mem_rd == if_id_rs1)) begin
+			stall = 1'b1;
+		end
+		//Branch and JALR RAW Hazard
+		else if ((instr[6:0] == 7'b1100011 || instr[6:0] == 7'b1100111) && id_ex_regWrite && (id_ex_rd == if_id_rs2 || id_ex_rd == if_id_rs1)) begin
+			stall = 1'b1;
 		end
 		else begin
-			if_stall = 1'b0;
-			id_stall = 1'b0;
+			stall = 1'b0;
 		end
 	end
 

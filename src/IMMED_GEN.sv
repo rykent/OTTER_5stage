@@ -18,17 +18,39 @@
 
 module IMMED_GEN(
     input [31:0] INSTRUCT,
-    output [31:0] U_TYPE,
-    output [31:0] I_TYPE,
-    output [31:0] S_TYPE,
-    output [31:0] J_TYPE,
-    output [31:0] B_TYPE
+    output logic [31:0] IMM
     );
     
-    assign U_TYPE = {INSTRUCT[31:12], 12'b0};
-    assign I_TYPE = {{21{INSTRUCT[31]}}, INSTRUCT[30:20]};
-    assign S_TYPE = {{21{INSTRUCT[31]}}, INSTRUCT[30:25], INSTRUCT[11:7]};
-    assign J_TYPE = {{12{INSTRUCT[31]}}, INSTRUCT[19:12], INSTRUCT[20], INSTRUCT[30:21], 1'b0};
-    assign B_TYPE = {{20{INSTRUCT[31]}}, INSTRUCT[7], INSTRUCT[30:25], INSTRUCT[11:8], 1'b0};
+    always_comb begin
+        case (INSTRUCT[6:0])
+            7'b0010011: begin //I-TYPE arithmetic ops
+                IMM = {{21{INSTRUCT[31]}}, INSTRUCT[30:20]};
+            end
+            7'b1100111: begin //I-TYPE jalr
+                IMM = {{21{INSTRUCT[31]}}, INSTRUCT[30:20]};
+            end
+            7'b0000011: begin //I-TYPE loads
+                IMM = {{21{INSTRUCT[31]}}, INSTRUCT[30:20]};
+            end
+            7'b0100011: begin //S-TYPE
+                IMM = {{21{INSTRUCT[31]}}, INSTRUCT[30:25], INSTRUCT[11:7]};
+            end
+            7'b0110111: begin //U-TYPE lui
+                IMM = {INSTRUCT[31:12], 12'b0};
+            end
+            7'b0010111: begin //U-TYPE auipc
+                IMM = {INSTRUCT[31:12], 12'b0};
+            end
+            7'b1101111: begin //J-TYPE
+                IMM = {{12{INSTRUCT[31]}}, INSTRUCT[19:12], INSTRUCT[20], INSTRUCT[30:21], 1'b0};
+            end
+            7'b1100011: begin //BRANCH
+                IMM = {{20{INSTRUCT[31]}}, INSTRUCT[7], INSTRUCT[30:25], INSTRUCT[11:8], 1'b0};
+            end
+            default: begin
+                IMM = 32'hDEADBEEF;
+            end
+        endcase
+    end
     
 endmodule

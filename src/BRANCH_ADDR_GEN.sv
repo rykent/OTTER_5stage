@@ -17,18 +17,16 @@
 
 
 module BRANCH_ADDR_GEN(
-    input [31:0] J_TYPE,
-    input [31:0] B_TYPE,
+    input [31:0] IMM,
     input [31:0] PC,
-    input [31:0] I_TYPE,
     input [31:0] RS1,
     output [31:0] JAL,
     output [31:0] BRANCH,
     output [31:0] JALR
     );
     
-    assign JAL = PC + J_TYPE;       //jal is program counter with J_Type immediate offset
-    assign BRANCH = PC + B_TYPE;    //branch is program counter with B_TYPE immediate offset
-    assign JALR = RS1 + I_TYPE;     //jalr is summation of source register and I_TYPE immediate
+    assign JAL = PC + IMM;       //jal is program counter with J_Type immediate offset
+    assign BRANCH = PC + IMM;    //branch is program counter with B_TYPE immediate offset
+    assign JALR = RS1 + IMM;     //jalr is summation of source register and I_TYPE immediate
     
 endmodule

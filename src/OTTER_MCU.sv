@@ -44,15 +44,11 @@ module OTTER_MCU(
         logic memRead2;
         logic [3:0] alu_fun;
         logic [1:0] alu_srcA;
-        logic [2:0] alu_srcB;
+        logic [1:0] alu_srcB;
         logic [1:0] rf_wr_sel;
         logic [31:0] rs1_data;
         logic [31:0] rs2_data;
-        logic [31:0] u_type;
-        logic [31:0] i_type;
-        logic [31:0] s_type;
-        logic [31:0] j_type;
-        logic [31:0] b_type;
+        logic [31:0] imm;
         logic csr_we;
         logic mret_exec;
     } ID_EX_r;
@@ -74,8 +70,11 @@ module OTTER_MCU(
     struct packed {
         logic [31:0] npc;
         logic regWrite;
+        logic memWrite;
+        logic [31:0] rs2_data;
+        logic [1:0] memSize;
+        logic memSign;
         logic [1:0] rf_wr_sel;
-        logic [31:0] dout2;
         logic [4:0]  rd_addr;
         logic [31:0] alu_res;
         logic [31:0] csr_rd;
@@ -107,9 +106,11 @@ module OTTER_MCU(
         if(RST) begin
             IF_ID_r <= 0;
         end 
-        else if (if_stall | id_stall) begin
-            IF_ID_r.pc <= IF_ID_r.pc;
-            IF_ID_r.npc <= IF_ID_r.npc;
+        else if (stall) begin
+            IF_ID_r <= IF_ID_r;
+        end
+        else if (flush) begin
+            IF_ID_r <= 0;
         end
         else begin
             IF_ID_r.pc <= pc_w;
@@ -147,6 +148,7 @@ module OTTER_MCU(
         .MEM_DIN2 (EX_MEM_r.rs2_data),
         .MEM_SIZE (EX_MEM_r.memSize),
         .MEM_SIGN (EX_MEM_r.memSign),
+        .FLUSH    (flush),
         .IO_IN    (IOBUS_IN),
         .IO_WR    (IOBUS_WR),
         .MEM_DOUT1(instr_w),
@@ -160,18 +162,21 @@ module OTTER_MCU(
     logic [31:0] rs1_data_w;
     logic [31:0] rs2_data_w;
 
+    logic [31:0] rs1_data_new_w;
+    logic [31:0] rs2_data_new_w;
+
     logic [31:0] alu_srcA_data_w;
     logic [31:0] alu_srcB_data_w;
     
 
     logic [1:0] alu_srcA_w;
-    logic [2:0] alu_srcB_w;
+    logic [1:0] alu_srcB_w;
     logic [3:0] alu_fun_w;
     logic [1:0] rf_wr_sel_w;
 
     logic memRead1;
-    logic if_stall;
-    logic id_stall;
+    logic stall;
+    logic flush;
 
     logic memRead2_w;
     logic regWrite_w;
@@ -179,19 +184,12 @@ module OTTER_MCU(
     logic csr_we_w;
     logic mret_exec_w;
 
-    logic [31:0] u_type_w;
-    logic [31:0] i_type_w;
-    logic [31:0] s_type_w;
-    logic [31:0] j_type_w;
-    logic [31:0] b_type_w;
+    logic [31:0] imm_w;
     
 
     always_ff @(posedge CLK) begin
-        if(RST | if_stall) begin
+        if(RST | stall) begin
              ID_EX_r <= 0;
-        end
-        else if (id_stall) begin
-            ID_EX_r <= ID_EX_r;
         end
         else begin
             ID_EX_r.pc <= IF_ID_r.pc;
@@ -204,13 +202,9 @@ module OTTER_MCU(
             ID_EX_r.alu_srcA <= alu_srcA_w;
             ID_EX_r.alu_srcB <= alu_srcB_w;
             ID_EX_r.rf_wr_sel <= rf_wr_sel_w;
-            ID_EX_r.rs1_data <= rs1_data_w;
-            ID_EX_r.rs2_data <= rs2_data_w;
-            ID_EX_r.u_type <= u_type_w;
-            ID_EX_r.i_type <= i_type_w;
-            ID_EX_r.s_type <= s_type_w;
-            ID_EX_r.j_type <= j_type_w;
-            ID_EX_r.b_type <= b_type_w;
+            ID_EX_r.rs1_data <= rs1_data_new_w;
+            ID_EX_r.rs2_data <= rs2_data_new_w;
+            ID_EX_r.imm <= imm_w;
             ID_EX_r.mret_exec <= mret_exec_w;
             ID_EX_r.csr_we <= csr_we_w;
         end
@@ -245,41 +239,58 @@ module OTTER_MCU(
 
     IMMED_GEN IMM (
         .INSTRUCT(instr_w),
-        .U_TYPE  (u_type_w),
-        .I_TYPE  (i_type_w),
-        .S_TYPE  (s_type_w),
-        .J_TYPE  (j_type_w),
-        .B_TYPE  (b_type_w)
+        .IMM(imm_w)
     );
 
     hazard_detection_unit HAZARD_DETECT (
         .id_ex_rd      (ID_EX_r.instr[11:7]),
+        .ex_mem_rd      (EX_MEM_r.rd_addr),
         .instr         (instr_w),
         .pcWrite       (pcWrite),
+        .id_ex_regWrite (ID_EX_r.regWrite),
         .id_ex_memRead2(ID_EX_r.memRead2),
-        .id_ex_regWrite(ID_EX_r.regWrite),
-        .if_stall         (if_stall),
-        .id_stall      (id_stall)
+        .ex_mem_memRead2(EX_MEM_r.memRead2),
+        .stall         (stall)
     );
 
     BRANCH_ADDR_GEN TARGET_GEN (
-        .J_TYPE(j_type_w),
-        .B_TYPE(b_type_w),
-        .I_TYPE(i_type_w),
+        .IMM(imm_w),
         .PC    (IF_ID_r.pc),
-        .RS1   (rs1_data_w),
+        .RS1   (rs1_data_new_w),
         .JAL   (jal_addr),
         .BRANCH(branch_addr),
         .JALR  (jalr_addr)
     );
 
     BRANCH_COND_GEN BRANCH_COND_GEN0 (
-        .RS1   (rs1_data_w),
-        .RS2   (rs2_data_w),
-        .INSTR   (instr_w),
+        .RS1   (rs1_data_new_w),
+        .RS2   (rs2_data_new_w),
+        .INSTR   (instr_w), 
         .INTR    (INTR & MSTATUS_w[3]),
+        .stall    (stall),
         .pcSource(pc_source),
-        .int_taken(int_taken)
+        .int_taken(int_taken),
+        .mret_exec(0),
+        .flush    (flush)
+    );
+
+
+    mux_2bit_sel ID_FORWARDC_MUX (
+        .A  (rs1_data_w),
+        .B  (EX_MEM_r.alu_res),
+        .C  (rf_wd_w),
+        .D  (0),
+        .sel(forwardC_sel),
+        .O  (rs1_data_new_w)
+    );
+
+    mux_2bit_sel ID_FORWARDD_MUX (
+        .A  (rs2_data_w),
+        .B  (EX_MEM_r.alu_res),
+        .C  (rf_wd_w),
+        .D  (0),
+        .sel(forwardD_sel),
+        .O  (rs2_data_new_w)
     );
 
 
@@ -295,6 +306,8 @@ module OTTER_MCU(
 
     logic [1:0] forwardA_sel;
     logic [1:0] forwardB_sel;
+    logic [1:0] forwardC_sel;
+    logic [1:0] forwardD_sel;
 
     logic [31:0] csr_rd_w;
     logic [31:0] MSTATUS_w;
@@ -304,7 +317,7 @@ module OTTER_MCU(
     logic csr_we;
 
     always_ff @(posedge CLK) begin
-        if(RST | id_stall) begin
+        if(RST) begin
              EX_MEM_r <= 0;
         end else begin
             EX_MEM_r.npc <= ID_EX_r.npc;
@@ -344,7 +357,7 @@ module OTTER_MCU(
 
     mux_2bit_sel ALU_SRCA_MUX (
         .A  (alu_srcA_fw),
-        .B  (ID_EX_r.u_type),
+        .B  (ID_EX_r.imm),
         .C  (~alu_srcA_fw),
         .D  (0),
         .sel(ID_EX_r.alu_srcA),
@@ -352,13 +365,11 @@ module OTTER_MCU(
     );
 
 
-    mux_3bit_sel ALU_SRCB_MUX (
+    mux_2bit_sel ALU_SRCB_MUX (
         .A  (alu_srcB_fw),
-        .B  (ID_EX_r.i_type),
-        .C  (ID_EX_r.s_type),
-        .D  (ID_EX_r.pc), 
-        .E  (csr_rd_w),
-        .F  (0),
+        .B  (ID_EX_r.imm),
+        .C  (ID_EX_r.pc), 
+        .D  (csr_rd_w),
         .sel(ID_EX_r.alu_srcB), 
         .O  (alu_srcB_data_w)
     );
@@ -366,12 +377,16 @@ module OTTER_MCU(
     forwarding FORWARD_UNIT (
         .id_ex_rs1      (ID_EX_r.instr[19:15]),
         .id_ex_rs2      (ID_EX_r.instr[24:20]),
+        .if_id_rs1      (instr_w[19:15]),
+        .if_id_rs2      (instr_w[24:20]),
         .ex_mem_rd      (EX_MEM_r.rd_addr),
         .ex_mem_regWrite(EX_MEM_r.regWrite),
         .mem_wb_regWrite(MEM_WB_r.regWrite),
         .mem_wb_rd      (MEM_WB_r.rd_addr),
         .forwardA_sel   (forwardA_sel),
-        .forwardB_sel   (forwardB_sel)
+        .forwardB_sel   (forwardB_sel),
+        .forwardC_sel   (forwardC_sel),
+        .forwardD_sel   (forwardD_sel)
     );
 
 
@@ -414,9 +429,12 @@ module OTTER_MCU(
             MEM_WB_r <= 0;
         end else begin
             MEM_WB_r.npc <= EX_MEM_r.npc;
+            MEM_WB_r.rs2_data <= EX_MEM_r.rs2_data;
+            MEM_WB_r.memWrite <= EX_MEM_r.memWrite;
             MEM_WB_r.regWrite <= EX_MEM_r.regWrite;
             MEM_WB_r.rf_wr_sel <= EX_MEM_r.rf_wr_sel;
-            //MEM_WB_r.dout2 <= dout2_w;
+            MEM_WB_r.memSize <= EX_MEM_r.memSize;
+            MEM_WB_r.memSign <= EX_MEM_r.memSign;
             MEM_WB_r.alu_res <= EX_MEM_r.alu_res;
             MEM_WB_r.rd_addr <= EX_MEM_r.rd_addr;
             MEM_WB_r.csr_rd <= EX_MEM_r.csr_rd;
